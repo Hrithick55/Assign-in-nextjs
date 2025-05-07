@@ -1,0 +1,326 @@
+import { useState, useEffect, useRef } from 'react';
+
+export default function Home() {
+  const [habits, setHabits] = useState([
+    { id: 1, name: 'Meditating', completed: true },
+    { id: 2, name: 'Read Philosophy', completed: true },
+    { id: 3, name: 'Journaling', completed: false }
+  ]);
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newHabitName, setNewHabitName] = useState('');
+  const [dropdownOpenId, setDropdownOpenId] = useState(null);
+  const [editHabitId, setEditHabitId] = useState(null);
+  const [editHabitName, setEditHabitName] = useState('');
+
+  const addInputRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!e.target.closest('.dropdown-menu') && !e.target.closest('.more-options-btn')) {
+        setDropdownOpenId(null);
+      }
+    }
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const toggleCompleted = (id) => {
+    setHabits((prev) =>
+      prev.map(h =>
+        h.id === id ? { ...h, completed: !h.completed } : h
+      )
+    );
+  };
+
+  const openDropdown = (id) => {
+    setDropdownOpenId(prev => (prev === id ? null : id));
+  };
+
+  const deleteHabit = (id) => {
+    setHabits((prev) => prev.filter(h => h.id !== id));
+    if (dropdownOpenId === id) setDropdownOpenId(null);
+    if (editHabitId === id) setEditHabitId(null);
+  };
+
+  const startEditing = (id, name) => {
+    setEditHabitId(id);
+    setEditHabitName(name);
+    setDropdownOpenId(null);
+  };
+
+  const cancelEditing = () => {
+    setEditHabitId(null);
+    setEditHabitName('');
+  };
+
+  const saveEditing = (id) => {
+    const trimmed = editHabitName.trim();
+    if (trimmed === '') {
+      alert('Habit name cannot be empty');
+      return;
+    }
+    setHabits((prev) =>
+      prev.map(h =>
+        h.id === id ? { ...h, name: trimmed } : h
+      )
+    );
+    setEditHabitId(null);
+    setEditHabitName('');
+  };
+
+  const addHabit = () => {
+    const trimmed = newHabitName.trim();
+    if (!trimmed) {
+      alert('Please enter a habit name.');
+      return;
+    }
+    // Optional: check for duplicates
+    if (habits.some(h => h.name.toLowerCase() === trimmed.toLowerCase())) {
+      alert('This habit already exists.');
+      return;
+    }
+    const newHabit = {
+      id: Date.now(),
+      name: trimmed,
+      completed: false
+    };
+    setHabits((prev) => [...prev, newHabit]);
+    setNewHabitName('');
+    setShowAddModal(false);
+  };
+
+  const completedCount = habits.filter(h => h.completed).length;
+  const totalCount = habits.length;
+  const percent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
+
+  // Format date string like "Sun, 1 March 2022"
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  const todayStr = formatDate(new Date());
+
+  useEffect(() => {
+    if (showAddModal && addInputRef.current) {
+      addInputRef.current.focus();
+    }
+  }, [showAddModal]);
+
+  return (
+    <>
+      <head>
+        <title>Today's Habit</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          rel="stylesheet"
+          crossOrigin="anonymous"
+          key="fontawesome"
+        />
+      </head>
+
+      <main className="bg-gray-50 min-h-screen flex flex-col relative p-4 font-sans">
+        {/* Date */}
+        <div className="text-center mb-2">
+          <span className="text-lg font-semibold text-gray-700">{todayStr}</span>
+        </div>
+
+        {/* Greeting */}
+        <div className="text-center mb-6">
+          <span className="text-4xl text-gray-700 font-medium">Hello Susy!</span>
+        </div>
+
+        {/* Styled progress box */}
+        <div className="bg-red-600 rounded-xl shadow-lg p-4 max-w-md mx-auto mb-6 flex items-center space-x-4 text-white">
+          <i className="fas fa-calendar-alt text-3xl" aria-hidden="true"></i>
+          <div className="flex-grow">
+            <div className="flex justify-between mb-1 font-semibold">
+              <span>{${completedCount} of ${totalCount} habits completed}</span>
+              <span>{percent}%</span>
+            </div>
+            <div className="w-full bg-red-400 rounded-full h-4 overflow-hidden">
+              <div
+                className="bg-red-900 h-4 rounded-full transition-all duration-300"
+                style={{ width: ${percent}% }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Habits Container */}
+        <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto w-full">
+          <h1 className="text-2xl font-semibold mb-6 border-b pb-2">Today's Habit</h1>
+          <ul className="space-y-3 relative">
+            {habits.map(({ id, name, completed }) => {
+              const editing = editHabitId === id;
+              return (
+                <li
+                  key={id}
+                  className={`rounded-md flex justify-between items-center px-4 py-3 relative ${
+                    completed ? 'bg-gray-100' : 'bg-gray-50'
+                  }`}
+                  data-id={id}
+                >
+                  <label className="flex items-center space-x-3 cursor-pointer flex-grow">
+                    <input
+                      type="checkbox"
+                      checked={completed}
+                      onChange={() => toggleCompleted(id)}
+                      className={form-checkbox h-6 w-6 ${completed ? 'text-green-500' : 'text-gray-900'}}
+                      aria-label={${completed ? 'Completed' : 'Not completed'} ${name}}
+                      disabled={editing}
+                    />
+                    {!editing ? (
+                      <span
+                        className={`text-base select-none ml-2 ${
+                          completed ? 'text-gray-600' : 'text-gray-900'
+                        } habit-text`}
+                      >
+                        {name}
+                      </span>
+                    ) : (
+                      <input
+                        type="text"
+                        className="border rounded-md px-2 py-1 w-full text-base ml-2"
+                        value={editHabitName}
+                        aria-label="Edit habit name"
+                        onChange={(e) => setEditHabitName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditing(id);
+                          if (e.key === 'Escape') cancelEditing();
+                        }}
+                        autoFocus
+                      />
+                    )}
+                  </label>
+
+                  <div className="relative flex items-center">
+                    {!editing ? (
+                      <>
+                        <button
+                          aria-label={More options for ${name}}
+                          className="text-gray-500 text-xl leading-none relative more-options-btn"
+                          aria-haspopup="true"
+                          aria-expanded={dropdownOpenId === id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDropdown(id);
+                          }}
+                          type="button"
+                        >
+                          <i className="fas fa-ellipsis-v" aria-hidden="true"></i>
+                        </button>
+                        {dropdownOpenId === id && (
+                          <div
+                            className="dropdown-menu absolute bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-[120px] flex flex-col right-10 top-10"
+                            role="menu"
+                          >
+                            <button
+                              className="px-4 py-2 hover:bg-gray-100 edit-btn text-left text-gray-700"
+                              onClick={() => startEditing(id, name)}
+                              type="button"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="px-4 py-2 hover:bg-gray-100 delete-btn text-left text-red-600 font-semibold"
+                              onClick={() => deleteHabit(id)}
+                              type="button"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="ml-2 px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
+                          onClick={() => saveEditing(id)}
+                          type="button"
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="ml-2 px-3 py-1 bg-gray-300 rounded-md hover:bg-gray-400"
+                          onClick={cancelEditing}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Add Habit Modal */}
+        {showAddModal && (
+          <div
+            id="add-habit-modal"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-habit-title"
+          >
+            <div className="bg-white rounded-md p-6 w-80 max-w-full mx-4">
+              <h2 id="add-habit-title" className="text-lg font-semibold mb-4">
+                Add New Habit
+              </h2>
+              <input
+                ref={addInputRef}
+                id="new-habit-input"
+                type="text"
+                placeholder="Enter habit name"
+                className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                value={newHabitName}
+                onChange={(e) => setNewHabitName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addHabit();
+                  if (e.key === 'Escape') setShowAddModal(false);
+                }}
+                aria-describedby="new-habit-help"
+              />
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  id="cancel-add-btn"
+                  className="px-4 py-2 rounded-md bg-gray-300 hover:bg-gray-400"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewHabitName('');
+                  }}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  id="confirm-add-btn"
+                  className="px-4 py-2 rounded-md bg-green-500 hover:bg-green-600 text-white"
+                  onClick={addHabit}
+                  type="button"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Habit Button */}
+        <button
+          aria-label="Add new habit"
+          id="add-habit-btn"
+          className="fixed bottom-12 right-6 bg-green-400 hover:bg-green-500 active:bg-green-600 rounded-full w-20 h-20 flex justify-center items-center shadow-lg shadow-green-300/70"
+          onClick={() => setShowAddModal(true)}
+          type="button"
+        >
+          <i className="fas fa-plus text-white text-5xl leading-none"></i>
+        </button>
+      </main>
+    </>
+  );
+}
